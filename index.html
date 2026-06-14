@@ -11,7 +11,7 @@
             background-color: #f0f8ff;
             font-family: 'Comic Sans MS', 'Verdana', sans-serif;
             overflow: hidden;
-            touch-action: none; /* Empêche tout mouvement d'écran parasite */
+            touch-action: none;
             user-select: none;
         }
 
@@ -90,6 +90,7 @@
             justify-content: center;
             align-items: center;
             background-color: #e0f7fa;
+            position: relative;
         }
 
         #consigne {
@@ -108,6 +109,26 @@
             white-space: nowrap;
         }
 
+        #btn-rejouer-flottant {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: #2196F3;
+            color: white;
+            border: 3px solid #1565C0;
+            padding: 10px 20px;
+            border-radius: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 150;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: transform 0.1s;
+        }
+        #btn-rejouer-flottant:active {
+            transform: scale(0.95);
+        }
+
         /* Zone de jeu adaptative */
         #game-area {
             position: relative;
@@ -122,18 +143,20 @@
             fill: #3498db;
             stroke: #2980b9;
             stroke-width: 6;
+            overflow: visible; /* Permet aux bordures de ne pas être rognées */
         }
 
+        /* Le marqueur d'angle droit : Un vrai petit carré rouge ! */
         .marker {
             position: absolute;
-            width: 25px;
-            height: 25px;
-            border: 5px solid red;
-            border-top: none;
-            border-right: none;
+            width: 15px;
+            height: 15px;
+            background-color: #ff3333;
+            border: 2px solid darkred;
             display: none;
             z-index: 5;
-            transform-origin: 0 0;
+            transform-origin: 0 0; /* Important pour qu'il s'insère parfaitement dans le coin */
+            pointer-events: none;
         }
 
         /* --- L'ÉQUERRE --- */
@@ -143,12 +166,11 @@
             top: 0;
             width: 250px;
             height: 250px;
-            transform-origin: 0 0; /* Angle droit en haut à gauche */
+            transform-origin: 0 0;
             z-index: 100;
             filter: drop-shadow(4px 6px 8px rgba(0,0,0,0.4));
             touch-action: none;
             cursor: grab;
-            /* Astuce magique : fond quasi-transparent pour que le bloc ENTIER capte la souris et la molette */
             background-color: rgba(255, 255, 255, 0.01); 
         }
 
@@ -201,6 +223,21 @@
             box-shadow: 0 10px 20px rgba(0,0,0,0.3);
         }
 
+        .btn-victoire {
+            margin-top: 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: 4px solid #2e7d32;
+            padding: 10px 30px;
+            font-size: 1.5rem;
+            border-radius: 15px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .btn-victoire:active {
+            transform: scale(0.95);
+        }
+
         @keyframes pop {
             0% { transform: translate(-50%, -50%) scale(0); }
             100% { transform: translate(-50%, -50%) scale(1); }
@@ -228,20 +265,21 @@
 
     <!-- ONGLET JEU -->
     <div id="tab-jeu" class="tab-content">
-        <div id="consigne">Trouve le carré ! Glisse l'équerre et utilise le bouton rose (ou la molette) pour pivoter.</div>
+        <button id="btn-rejouer-flottant" onclick="initGame()">🔄 Nouveau tirage</button>
+        <div id="consigne">Trouve le carré ! Aligne parfaitement l'équerre pour révéler les angles droits.</div>
         
         <div id="game-area">
-            <!-- Carré et Losanges -->
-            <svg class="shape" id="shape-carre" style="left: 150px; top: 250px; width: 200px; height: 200px; transform: rotate(15deg);">
-                <polygon points="0,0 200,0 200,200 0,200" />
+            <!-- Formes dynamiques -->
+            <svg class="shape" id="shape-carre">
+                <polygon points="" />
             </svg>
 
-            <svg class="shape" style="left: 450px; top: 180px; width: 320px; height: 240px; transform: rotate(-20deg);">
-                <polygon points="160,0 320,120 160,240 0,120" />
+            <svg class="shape" id="shape-losange1">
+                <polygon points="" />
             </svg>
 
-            <svg class="shape" style="left: 600px; top: 450px; width: 384px; height: 112px; transform: rotate(35deg);">
-                <polygon points="192,0 384,56 192,112 0,56" />
+            <svg class="shape" id="shape-losange2">
+                <polygon points="" />
             </svg>
 
             <!-- Marqueurs -->
@@ -252,7 +290,6 @@
 
             <!-- L'ÉQUERRE -->
             <div id="equerre-container">
-                <!-- Dessin graphique de l'équerre -->
                 <svg width="250" height="250" viewBox="0 0 250 250" style="position: absolute; left: 0; top: 0; pointer-events: none;">
                     <polygon points="0,0 200,0 0,200" fill="rgba(255, 235, 59, 0.8)" stroke="#fbc02d" stroke-width="2"/>
                     <polygon points="25,25 125,25 25,125" fill="#e0f7fa" stroke="#fbc02d" stroke-width="2"/>
@@ -265,14 +302,14 @@
                     <line x1="0" y1="100" x2="10" y2="100" stroke="black" stroke-width="3"/>
                 </svg>
                 
-                <!-- Poignée de rotation au premier plan -->
                 <div id="rotate-handle">⟲</div>
             </div>
         </div>
     </div>
 
     <div id="message-victoire">
-        🎉 Bravo ! Tu as vérifié les 4 angles droits du carré ! 🎉
+        🎉 Bravo ! Tu as vérifié les 4 angles droits du carré ! 🎉<br>
+        <button class="btn-victoire" onclick="initGame()">Refaire une partie</button>
     </div>
 
     <script>
@@ -300,6 +337,9 @@
             document.getElementById('tab-' + tabId).classList.add('active');
             btn.classList.add('active');
             
+            // On cache toujours le message de victoire lorsqu'on change d'onglet
+            document.getElementById('message-victoire').style.display = 'none';
+
             if(tabId === 'jeu') {
                 setTimeout(resizeGameArea, 50); 
             }
@@ -318,26 +358,112 @@
         let eqY = 350;
         let eqRotation = 0;
         let anglesTrouves = [false, false, false, false];
+        let targets = [];
 
         function updateEquerre() {
             equerre.style.transform = `translate(${eqX}px, ${eqY}px) rotate(${eqRotation}deg)`;
             checkAngles();
         }
 
+        /* --- GENERATION ALEATOIRE DES FORMES --- */
+        function getRotatedPoint(cx, cy, x_offset, y_offset, angleDeg) {
+            let rad = angleDeg * Math.PI / 180;
+            let nx = x_offset * Math.cos(rad) - y_offset * Math.sin(rad);
+            let ny = x_offset * Math.sin(rad) + y_offset * Math.cos(rad);
+            return { x: cx + nx, y: cy + ny };
+        }
+
+        function initGame() {
+            // Cacher le message de victoire
+            document.getElementById('message-victoire').style.display = 'none';
+            anglesTrouves = [false, false, false, false];
+
+            // Cacher les carrés rouges
+            for(let i=0; i<4; i++) {
+                document.getElementById('marker-'+i).style.display = 'none';
+            }
+
+            // Générer 3 emplacements de base (Gauche, Milieu, Droite) avec une petite part d'aléatoire
+            let slots = [
+                { cx: 200 + (Math.random()*60 - 30), cy: 350 + (Math.random()*100 - 50) },
+                { cx: 500 + (Math.random()*60 - 30), cy: 350 + (Math.random()*100 - 50) },
+                { cx: 800 + (Math.random()*60 - 30), cy: 350 + (Math.random()*100 - 50) }
+            ];
+            // Mélanger les emplacements pour que le carré ne soit jamais au même endroit
+            slots.sort(() => Math.random() - 0.5);
+
+            // 1. LE CARRÉ
+            let side = Math.floor(Math.random() * 60) + 140; // Taille entre 140 et 200px
+            let sqAngle = Math.floor(Math.random() * 360);
+            let carreSvg = document.getElementById('shape-carre');
+            carreSvg.style.width = side + 'px';
+            carreSvg.style.height = side + 'px';
+            carreSvg.style.left = (slots[0].cx - side/2) + 'px';
+            carreSvg.style.top = (slots[0].cy - side/2) + 'px';
+            carreSvg.style.transform = `rotate(${sqAngle}deg)`;
+            carreSvg.querySelector('polygon').setAttribute('points', `0,0 ${side},0 ${side},${side} 0,${side}`);
+
+            // Cibles d'angles pour le Carré
+            const half = side / 2;
+            targets = [
+                { ...getRotatedPoint(slots[0].cx, slots[0].cy, -half, -half, sqAngle), rot: sqAngle, id: 0 },
+                { ...getRotatedPoint(slots[0].cx, slots[0].cy, half, -half, sqAngle), rot: sqAngle + 90, id: 1 },
+                { ...getRotatedPoint(slots[0].cx, slots[0].cy, half, half, sqAngle), rot: sqAngle + 180, id: 2 },
+                { ...getRotatedPoint(slots[0].cx, slots[0].cy, -half, half, sqAngle), rot: sqAngle + 270, id: 3 }
+            ];
+
+            // Placement des repères rouges invisibles
+            targets.forEach((t, i) => {
+                const m = document.getElementById(`marker-${i}`);
+                m.style.left = t.x + 'px';
+                m.style.top = t.y + 'px';
+                m.style.transform = `rotate(${t.rot}deg)`;
+            });
+
+            // 2. LE LOSANGE 1 (Même longueur de côté que le carré)
+            let w1 = Math.floor(Math.random() * (side * 1.6 - side * 0.6)) + side * 0.6;
+            if (Math.abs(w1 - side) < 15) w1 += 20; // S'assure que le losange n'est pas un carré parfait
+            let h1 = 2 * Math.sqrt(side * side - (w1 / 2) * (w1 / 2));
+            let rAngle1 = Math.floor(Math.random() * 360);
+            let r1Svg = document.getElementById('shape-losange1');
+            r1Svg.style.width = w1 + 'px';
+            r1Svg.style.height = h1 + 'px';
+            r1Svg.style.left = (slots[1].cx - w1/2) + 'px';
+            r1Svg.style.top = (slots[1].cy - h1/2) + 'px';
+            r1Svg.style.transform = `rotate(${rAngle1}deg)`;
+            r1Svg.querySelector('polygon').setAttribute('points', `${w1/2},0 ${w1},${h1/2} ${w1/2},${h1} 0,${h1/2}`);
+
+            // 3. LE LOSANGE 2
+            let w2 = Math.floor(Math.random() * (side * 1.6 - side * 0.6)) + side * 0.6;
+            if (Math.abs(w2 - side) < 15) w2 -= 20;
+            let h2 = 2 * Math.sqrt(side * side - (w2 / 2) * (w2 / 2));
+            let rAngle2 = Math.floor(Math.random() * 360);
+            let r2Svg = document.getElementById('shape-losange2');
+            r2Svg.style.width = w2 + 'px';
+            r2Svg.style.height = h2 + 'px';
+            r2Svg.style.left = (slots[2].cx - w2/2) + 'px';
+            r2Svg.style.top = (slots[2].cy - h2/2) + 'px';
+            r2Svg.style.transform = `rotate(${rAngle2}deg)`;
+            r2Svg.querySelector('polygon').setAttribute('points', `${w2/2},0 ${w2},${h2/2} ${w2/2},${h2} 0,${h2/2}`);
+
+            // Réinitialiser la position de l'équerre (au centre en bas, hors des formes)
+            eqX = 375;
+            eqY = 400;
+            eqRotation = 0;
+            updateEquerre();
+        }
+
         /* --- SYSTEME D'EVENEMENTS FIABLE (SOURIS & TACTILE) --- */
-        
         function getClientPos(e) {
             if (e.touches && e.touches.length > 0) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
             if (e.changedTouches && e.changedTouches.length > 0) return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
             return { x: e.clientX, y: e.clientY };
         }
 
-        // On déclenche l'action quand on clique/touche la zone de l'équerre
         function handleStart(e) {
             e.preventDefault(); 
             let pos = getClientPos(e);
 
-            // On vérifie si on a cliqué sur le bouton rose de rotation
             if (e.target.id === 'rotate-handle' || (e.target.parentNode && e.target.parentNode.id === 'rotate-handle')) {
                 isRotating = true;
                 rotateHandle.classList.add('active');
@@ -354,7 +480,6 @@
         equerre.addEventListener('mousedown', handleStart, { passive: false });
         equerre.addEventListener('touchstart', handleStart, { passive: false });
 
-        // On suit le mouvement sur toute la page pour ne jamais perdre l'équerre
         function handleMove(e) {
             if (!isDragging && !isRotating) return;
             e.preventDefault();
@@ -385,7 +510,6 @@
         window.addEventListener('mousemove', handleMove, { passive: false });
         window.addEventListener('touchmove', handleMove, { passive: false });
 
-        // On arrête l'action quand on lâche le bouton
         function handleEnd() {
             isDragging = false;
             isRotating = false;
@@ -398,40 +522,14 @@
         /* --- ROTATION AVEC LA MOLETTE DE LA SOURIS --- */
         equerre.addEventListener('wheel', (e) => {
             e.preventDefault();
-            // e.deltaY indique le sens de la molette
             let direction = e.deltaY > 0 ? 1 : -1;
-            eqRotation += direction * 5; // Pivote de 5 degrés
+            eqRotation += direction * 5; 
             
             if (eqRotation < 0) eqRotation += 360;
             updateEquerre();
         }, {passive: false});
 
-
         /* --- VERIFICATION DES ANGLES --- */
-        const carre = { cx: 250, cy: 350, size: 200, angle: 15 };
-        const half = carre.size / 2;
-
-        function getRotatedPoint(cx, cy, x_offset, y_offset, angleDeg) {
-            let rad = angleDeg * Math.PI / 180;
-            let nx = x_offset * Math.cos(rad) - y_offset * Math.sin(rad);
-            let ny = x_offset * Math.sin(rad) + y_offset * Math.cos(rad);
-            return { x: cx + nx, y: cy + ny };
-        }
-
-        const targets = [
-            { ...getRotatedPoint(carre.cx, carre.cy, -half, -half, carre.angle), rot: carre.angle, id: 0 },
-            { ...getRotatedPoint(carre.cx, carre.cy, half, -half, carre.angle), rot: carre.angle + 90, id: 1 },
-            { ...getRotatedPoint(carre.cx, carre.cy, half, half, carre.angle), rot: carre.angle + 180, id: 2 },
-            { ...getRotatedPoint(carre.cx, carre.cy, -half, half, carre.angle), rot: carre.angle + 270, id: 3 }
-        ];
-
-        targets.forEach((t, i) => {
-            const m = document.getElementById(`marker-${i}`);
-            m.style.left = t.x + 'px';
-            m.style.top = t.y + 'px';
-            m.style.transform = `rotate(${t.rot}deg)`;
-        });
-
         function checkAngles() {
             targets.forEach((target, index) => {
                 if (anglesTrouves[index]) return;
@@ -443,7 +541,8 @@
                 let rotDiff = Math.abs(currentRot - expectedRot);
                 if (rotDiff > 180) rotDiff = 360 - rotDiff;
 
-                if (dist < 20 && rotDiff < 15) {
+                // Tolérance stricte pour obliger à bien aligner les bords (6 degrés max !)
+                if (dist < 20 && rotDiff < 6) {
                     anglesTrouves[index] = true;
                     document.getElementById(`marker-${index}`).style.display = 'block';
                     checkVictoire();
@@ -459,9 +558,8 @@
             }
         }
 
-        // On appelle la fonction de mise à jour tout à la fin, 
-        // une fois que 'targets' a été complètement initialisé.
-        updateEquerre();
+        // Lancer la première partie
+        initGame();
     </script>
 </body>
 </html>
