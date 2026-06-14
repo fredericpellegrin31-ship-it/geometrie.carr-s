@@ -10,8 +10,9 @@
             padding: 0;
             background-color: #f0f8ff;
             font-family: 'Comic Sans MS', 'Verdana', sans-serif;
-            overflow-x: hidden;
-            touch-action: none; /* Empêche le zoom tactile non désiré */
+            overflow: hidden;
+            touch-action: none; /* Empêche tout mouvement d'écran parasite */
+            user-select: none;
         }
 
         /* --- BARRE DE NAVIGATION --- */
@@ -56,8 +57,12 @@
         }
 
         /* --- SECTION LEÇON --- */
-        #lecon-area {
+        #tab-lecon {
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #lecon-area {
             padding: 20px;
             text-align: center;
         }
@@ -80,15 +85,11 @@
         }
 
         /* --- SECTION JEU --- */
-        #game-wrapper {
-            position: relative;
-            width: 100%;
-            height: 100%;
+        #tab-jeu.active {
             display: flex;
             justify-content: center;
             align-items: center;
             background-color: #e0f7fa;
-            overflow: hidden;
         }
 
         #consigne {
@@ -107,12 +108,13 @@
             white-space: nowrap;
         }
 
-        /* La zone de jeu fixe qui s'adaptera à l'écran */
+        /* Zone de jeu adaptative */
         #game-area {
-            position: absolute;
+            position: relative;
             width: 1000px;
             height: 700px;
             transform-origin: center center;
+            touch-action: none;
         }
 
         .shape {
@@ -134,24 +136,37 @@
             transform-origin: 0 0;
         }
 
-        /* L'Équerre */
+        /* --- L'ÉQUERRE --- */
         #equerre-container {
             position: absolute;
+            left: 0; /* Fixation indispensable pour le repère mathématique */
+            top: 0;
             width: 250px;
             height: 250px;
-            transform-origin: 0 0; /* Le pivot est EXACTEMENT sur l'angle droit */
+            transform-origin: 0 0; /* Angle droit en haut à gauche */
             z-index: 100;
             filter: drop-shadow(4px 6px 8px rgba(0,0,0,0.4));
+            touch-action: none;
         }
 
-        #equerre-body {
+        /* Bouclier invisible parfait pour attraper l'équerre sans faille */
+        #drag-zone {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
             cursor: grab;
+            /* On coupe le carré invisible pour qu'il ait exactement la forme du triangle */
+            clip-path: polygon(0 0, 100% 0, 0 100%); 
         }
-        #equerre-body:active {
+
+        #drag-zone:active {
             cursor: grabbing;
         }
 
-        /* Poignée pour faire pivoter au doigt */
+        /* Poignée pour pivoter */
         #rotate-handle {
             position: absolute;
             width: 60px;
@@ -159,7 +174,7 @@
             background-color: #e91e63;
             border: 4px solid white;
             border-radius: 50%;
-            left: 80px; /* Positionné à 45 degrés du centre */
+            left: 80px; 
             top: 80px;
             transform: translate(-50%, -50%);
             cursor: grab;
@@ -169,8 +184,10 @@
             color: white;
             font-size: 30px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            z-index: 10;
         }
-        #rotate-handle:active {
+        
+        #rotate-handle.active {
             background-color: #c2185b;
             cursor: grabbing;
         }
@@ -212,120 +229,109 @@
     <div id="tab-lecon" class="tab-content active">
         <div id="lecon-area">
             <h1>Leçon : Les formes et les angles droits</h1>
-            
-            <!-- Image de la leçon : Doit être dans le même dossier -->
-            <img src="lecon.png" alt="Leçon sur le carré" onerror="this.outerHTML='<p style=\'color:red; font-size:1.5rem;\'>⚠️ Image <b>lecon.png</b> introuvable. Place l\'image dans le même dossier que ce fichier HTML.</p>'">
-            
-            <!-- Vidéo Canopé -->
+            <img src="lecon.png" alt="Leçon sur le carré" onerror="this.outerHTML='<p style=\'color:red; font-size:1.5rem; margin-top:20px;\'>⚠️ L\'image <b>lecon.png</b> est introuvable. N\'oublie pas de la placer dans le même dossier que ce fichier.</p>'">
             <div class="video-container">
-                <iframe src="https://lesfondamentaux.reseau-canope.fr/embed/video/decrire-le-carre" width="640" height="360" frameborder="0" allowfullscreen="true"></iframe>
+                <iframe src="https://lesfondamentaux.reseau-canope.fr/embed/video/decrire-le-carre" width="100%" height="360" frameborder="0" allowfullscreen="true"></iframe>
             </div>
         </div>
     </div>
 
     <!-- ONGLET JEU -->
     <div id="tab-jeu" class="tab-content">
-        <div id="game-wrapper">
-            <div id="consigne">Trouve le carré ! Glisse l'équerre et utilise le bouton rose pour la faire pivoter.</div>
-            
-            <div id="game-area">
-                <!-- Carré (Incliné de 15°) -->
-                <!-- Côtés = 200px -->
-                <svg class="shape" id="shape-carre" style="left: 150px; top: 250px; width: 200px; height: 200px; transform: rotate(15deg);">
-                    <polygon points="0,0 200,0 200,200 0,200" />
+        <div id="consigne">Trouve le carré ! Glisse l'équerre et utilise le bouton rose (ou la molette) pour pivoter.</div>
+        
+        <div id="game-area">
+            <!-- Carré et Losanges -->
+            <svg class="shape" id="shape-carre" style="left: 150px; top: 250px; width: 200px; height: 200px; transform: rotate(15deg);">
+                <polygon points="0,0 200,0 200,200 0,200" />
+            </svg>
+
+            <svg class="shape" style="left: 450px; top: 180px; width: 320px; height: 240px; transform: rotate(-20deg);">
+                <polygon points="160,0 320,120 160,240 0,120" />
+            </svg>
+
+            <svg class="shape" style="left: 600px; top: 450px; width: 384px; height: 112px; transform: rotate(35deg);">
+                <polygon points="192,0 384,56 192,112 0,56" />
+            </svg>
+
+            <!-- Marqueurs -->
+            <div id="marker-0" class="marker"></div>
+            <div id="marker-1" class="marker"></div>
+            <div id="marker-2" class="marker"></div>
+            <div id="marker-3" class="marker"></div>
+
+            <!-- L'ÉQUERRE -->
+            <div id="equerre-container">
+                <!-- Dessin graphique ignoré par la souris -->
+                <svg width="250" height="250" viewBox="0 0 250 250" style="position: absolute; left: 0; top: 0; pointer-events: none;">
+                    <polygon points="0,0 200,0 0,200" fill="rgba(255, 235, 59, 0.8)" stroke="#fbc02d" stroke-width="2"/>
+                    <polygon points="25,25 125,25 25,125" fill="#e0f7fa" stroke="#fbc02d" stroke-width="2"/>
+                    <rect x="0" y="0" width="20" height="20" fill="none" stroke="red" stroke-width="4"/>
+                    <line x1="20" y1="0" x2="20" y2="5" stroke="black" stroke-width="2"/><line x1="40" y1="0" x2="40" y2="5" stroke="black" stroke-width="2"/>
+                    <line x1="60" y1="0" x2="60" y2="5" stroke="black" stroke-width="2"/><line x1="80" y1="0" x2="80" y2="5" stroke="black" stroke-width="2"/>
+                    <line x1="100" y1="0" x2="100" y2="10" stroke="black" stroke-width="3"/>
+                    <line x1="0" y1="20" x2="5" y2="20" stroke="black" stroke-width="2"/><line x1="0" y1="40" x2="5" y2="40" stroke="black" stroke-width="2"/>
+                    <line x1="0" y1="60" x2="5" y2="60" stroke="black" stroke-width="2"/><line x1="0" y1="80" x2="5" y2="80" stroke="black" stroke-width="2"/>
+                    <line x1="0" y1="100" x2="10" y2="100" stroke="black" stroke-width="3"/>
                 </svg>
-
-                <!-- Losange 1 (Incliné de -20°) -->
-                <!-- Diagonales: 320 et 240. Par Pythagore, les côtés font exactement 200px ! -->
-                <svg class="shape" style="left: 450px; top: 180px; width: 320px; height: 240px; transform: rotate(-20deg);">
-                    <polygon points="160,0 320,120 160,240 0,120" />
-                </svg>
-
-                <!-- Losange 2 (Incliné de 35°) -->
-                <!-- Diagonales: 384 et 112. Par Pythagore, les côtés font exactement 200px ! -->
-                <svg class="shape" style="left: 600px; top: 450px; width: 384px; height: 112px; transform: rotate(35deg);">
-                    <polygon points="192,0 384,56 192,112 0,56" />
-                </svg>
-
-                <!-- Marqueurs rouges d'angles droits (invisibles au début) -->
-                <!-- Ils seront positionnés en JavaScript pour correspondre exactement au carré incliné -->
-                <div id="marker-0" class="marker"></div>
-                <div id="marker-1" class="marker"></div>
-                <div id="marker-2" class="marker"></div>
-                <div id="marker-3" class="marker"></div>
-
-                <!-- L'ÉQUERRE -->
-                <div id="equerre-container">
-                    <svg id="equerre-body" width="250" height="250" viewBox="0 0 250 250">
-                        <!-- Fond jaune transparent -->
-                        <polygon points="0,0 200,0 0,200" fill="rgba(255, 235, 59, 0.8)" stroke="#fbc02d" stroke-width="2"/>
-                        <!-- Trou central -->
-                        <polygon points="25,25 125,25 25,125" fill="#e0f7fa" stroke="#fbc02d" stroke-width="2"/>
-                        
-                        <!-- Le petit carré rouge marquant l'angle droit de l'équerre -->
-                        <rect x="0" y="0" width="20" height="20" fill="none" stroke="red" stroke-width="4"/>
-                        
-                        <!-- Graduations décoratives -->
-                        <line x1="20" y1="0" x2="20" y2="5" stroke="black" stroke-width="2"/><line x1="40" y1="0" x2="40" y2="5" stroke="black" stroke-width="2"/>
-                        <line x1="60" y1="0" x2="60" y2="5" stroke="black" stroke-width="2"/><line x1="80" y1="0" x2="80" y2="5" stroke="black" stroke-width="2"/>
-                        <line x1="100" y1="0" x2="100" y2="10" stroke="black" stroke-width="3"/>
-                        <line x1="0" y1="20" x2="5" y2="20" stroke="black" stroke-width="2"/><line x1="0" y1="40" x2="5" y2="40" stroke="black" stroke-width="2"/>
-                        <line x1="0" y1="60" x2="5" y2="60" stroke="black" stroke-width="2"/><line x1="0" y1="80" x2="5" y2="80" stroke="black" stroke-width="2"/>
-                        <line x1="0" y1="100" x2="10" y2="100" stroke="black" stroke-width="3"/>
-                    </svg>
-                    <!-- Poignée de rotation -->
-                    <div id="rotate-handle">⟲</div>
-                </div>
+                
+                <!-- Zone invisible de glissement 100% fiable -->
+                <div id="drag-zone"></div>
+                <!-- Poignée de rotation au premier plan -->
+                <div id="rotate-handle">⟲</div>
             </div>
         </div>
     </div>
 
     <div id="message-victoire">
-        🎉 Bravo ! Tu as trouvé le carré et vérifié ses 4 angles droits ! 🎉
+        🎉 Bravo ! Tu as vérifié les 4 angles droits du carré ! 🎉
     </div>
 
     <script>
-        /* --- GESTION DES ONGLETS --- */
-        function switchTab(tabId, btn) {
-            // Cacher tout
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            // Afficher le bon
-            document.getElementById('tab-' + tabId).classList.add('active');
-            btn.classList.add('active');
-            // Recalculer l'échelle si on passe au jeu
-            if(tabId === 'jeu') resizeGameArea();
-        }
-
-        /* --- LOGIQUE DU JEU GEOMETRIE --- */
-        const gameArea = document.getElementById('game-area');
-        const gameWrapper = document.getElementById('game-wrapper');
-        const equerre = document.getElementById('equerre-container');
-        const equerreBody = document.getElementById('equerre-body');
-        const rotateHandle = document.getElementById('rotate-handle');
-
-        let isDragging = false;
-        let isRotating = false;
-        let startX, startY, initialX, initialY;
-        
-        let eqX = 500;
-        let eqY = 350;
-        let eqRotation = 0;
+        /* --- GESTION DES ONGLETS ET AFFICHAGE --- */
         let scale = 1;
+        const gameArea = document.getElementById('game-area');
 
-        let anglesTrouves = [false, false, false, false];
-
-        // Redimensionnement responsif pour que la zone de 1000x700 rentre sur tout écran
         function resizeGameArea() {
-            if(document.getElementById('tab-jeu').classList.contains('active')) {
-                const wrapperRect = gameWrapper.getBoundingClientRect();
-                // On calcule le ratio pour que le jeu rentre entièrement
-                scale = Math.min(wrapperRect.width / 1000, wrapperRect.height / 700);
+            const tabJeu = document.getElementById('tab-jeu');
+            if (tabJeu.classList.contains('active')) {
+                let w = tabJeu.clientWidth;
+                let h = tabJeu.clientHeight;
+                if (w === 0 || h === 0) return; // Evite le bug de calcul à 0
+                
+                scale = Math.min(w / 1000, h / 700);
+                scale = Math.max(0.1, scale); // Sécurité mathématique
                 gameArea.style.transform = `scale(${scale})`;
             }
         }
         window.addEventListener('resize', resizeGameArea);
-        resizeGameArea(); // Initialisation
+
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+            btn.classList.add('active');
+            
+            if(tabId === 'jeu') {
+                // Petit délai pour laisser le temps au navigateur de tout afficher avant de calculer la taille
+                setTimeout(resizeGameArea, 50); 
+            }
+        }
+
+        /* --- LOGIQUE DU JEU GEOMETRIE --- */
+        const equerre = document.getElementById('equerre-container');
+        const dragZone = document.getElementById('drag-zone');
+        const rotateHandle = document.getElementById('rotate-handle');
+        
+        let isDragging = false;
+        let isRotating = false;
+        let startPointerX, startPointerY;
+        let initialEqX, initialEqY;
+        
+        let eqX = 500;
+        let eqY = 350;
+        let eqRotation = 0;
+        let anglesTrouves = [false, false, false, false];
 
         function updateEquerre() {
             equerre.style.transform = `translate(${eqX}px, ${eqY}px) rotate(${eqRotation}deg)`;
@@ -333,85 +339,79 @@
         }
         updateEquerre();
 
-        /* --- EVENEMENTS SOURIS / TACTILE --- */
+        /* --- SYSTEME D'EVENEMENTS ULTRA-ROBUSTE --- */
         
-        // Obtenir les coordonnées exactes en fonction de l'échelle (scale)
-        function getEventPos(e) {
-            let clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
-            let clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
-            return { x: clientX, y: clientY };
+        function getClientPos(e) {
+            if (e.touches && e.touches.length > 0) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            if (e.changedTouches && e.changedTouches.length > 0) return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+            return { x: e.clientX, y: e.clientY };
         }
 
-        // 1. GLISSER L'ÉQUERRE
-        function startDrag(e) {
-            if(e.target === rotateHandle || rotateHandle.contains(e.target)) return; // Ignorer si on touche la poignée
-            isDragging = true;
-            let pos = getEventPos(e);
-            startX = pos.x;
-            startY = pos.y;
-            initialX = eqX;
-            initialY = eqY;
+        function handleStart(e, action) {
+            e.preventDefault(); // Bloque le défilement de l'écran
+            let pos = getClientPos(e);
+
+            if (action === 'drag') {
+                isDragging = true;
+                startPointerX = pos.x;
+                startPointerY = pos.y;
+                initialEqX = eqX;
+                initialEqY = eqY;
+            } else if (action === 'rotate') {
+                isRotating = true;
+                rotateHandle.classList.add('active');
+            }
         }
 
-        // 2. PIVOTER AVEC LA POIGNÉE (Tactile / Souris)
-        function startRotate(e) {
-            isRotating = true;
-            e.preventDefault(); // Empêcher le comportement tactile natif
-            e.stopPropagation();
-        }
+        // Branchement du clic ET du toucher
+        dragZone.addEventListener('mousedown', (e) => handleStart(e, 'drag'), { passive: false });
+        dragZone.addEventListener('touchstart', (e) => handleStart(e, 'drag'), { passive: false });
 
-        // 3. MOUVEMENT GENERAL
-        function move(e) {
+        rotateHandle.addEventListener('mousedown', (e) => handleStart(e, 'rotate'), { passive: false });
+        rotateHandle.addEventListener('touchstart', (e) => handleStart(e, 'rotate'), { passive: false });
+
+        // Mouvements suivis globalement
+        function handleMove(e) {
             if (!isDragging && !isRotating) return;
-            e.preventDefault(); 
-            
-            let pos = getEventPos(e);
+            e.preventDefault();
+
+            let pos = getClientPos(e);
+            let safeScale = Math.max(0.1, scale); // Sécurité division par zéro
 
             if (isDragging) {
-                // Déplacement en tenant compte du zoom (scale)
-                let dx = (pos.x - startX) / scale;
-                let dy = (pos.y - startY) / scale;
-                eqX = initialX + dx;
-                eqY = initialY + dy;
+                let dx = (pos.x - startPointerX) / safeScale;
+                let dy = (pos.y - startPointerY) / safeScale;
+                eqX = initialEqX + dx;
+                eqY = initialEqY + dy;
             } 
             else if (isRotating) {
-                // Trouver les coordonnées de l'origine de l'équerre à l'écran
                 let gameRect = gameArea.getBoundingClientRect();
-                // eqX et eqY sont les coordonnées dans le gameArea. On les convertit en coordonnées écran.
-                let originScreenX = gameRect.left + (eqX * scale);
-                let originScreenY = gameRect.top + (eqY * scale);
+                let pivotScreenX = gameRect.left + (eqX * safeScale);
+                let pivotScreenY = gameRect.top + (eqY * safeScale);
 
-                // Calculer l'angle entre l'origine de l'équerre et le doigt/souris
-                let angleRad = Math.atan2(pos.y - originScreenY, pos.x - originScreenX);
+                let angleRad = Math.atan2(pos.y - pivotScreenY, pos.x - pivotScreenX);
                 let angleDeg = angleRad * (180 / Math.PI);
                 
-                // La poignée est située à 45 degrés par rapport au coin (à x=80, y=80).
-                // On soustrait 45 degrés pour que l'équerre suive exactement le doigt.
-                eqRotation = angleDeg - 45;
+                eqRotation = angleDeg - 45; // 45° compense la position du bouton rose
                 if (eqRotation < 0) eqRotation += 360;
             }
             updateEquerre();
         }
 
-        function endInteraction() {
+        window.addEventListener('mousemove', handleMove, { passive: false });
+        window.addEventListener('touchmove', handleMove, { passive: false });
+
+        // Fin des mouvements
+        function handleEnd() {
             isDragging = false;
             isRotating = false;
+            rotateHandle.classList.remove('active');
         }
 
-        // Ajout des écouteurs
-        equerreBody.addEventListener('mousedown', startDrag);
-        equerreBody.addEventListener('touchstart', startDrag, {passive: false});
-        
-        rotateHandle.addEventListener('mousedown', startRotate);
-        rotateHandle.addEventListener('touchstart', startRotate, {passive: false});
+        window.addEventListener('mouseup', handleEnd);
+        window.addEventListener('touchend', handleEnd);
 
-        document.addEventListener('mousemove', move);
-        document.addEventListener('touchmove', move, {passive: false});
-        
-        document.addEventListener('mouseup', endInteraction);
-        document.addEventListener('touchend', endInteraction);
-
-        // 4. PIVOTER AVEC LA MOLETTE SOURIS
+        // Molette souris
         equerre.addEventListener('wheel', (e) => {
             e.preventDefault();
             eqRotation += e.deltaY > 0 ? 5 : -5;
@@ -420,9 +420,8 @@
         }, {passive: false});
 
         /* --- VERIFICATION DES ANGLES --- */
-        
-        // Mathématiques pour trouver les coins exacts du carré incliné
-        const carre = { cx: 250, cy: 350, size: 200, angle: 15 }; // Le carré est à gauche=150, top=250. Son centre est donc 150+100=250, 250+100=350.
+        const carre = { cx: 250, cy: 350, size: 200, angle: 15 };
+        const half = carre.size / 2;
 
         function getRotatedPoint(cx, cy, x_offset, y_offset, angleDeg) {
             let rad = angleDeg * Math.PI / 180;
@@ -431,16 +430,13 @@
             return { x: cx + nx, y: cy + ny };
         }
 
-        const half = carre.size / 2; // 100
-        // Cibles (Coordonnées exactes et angles attendus pour que l'équerre valide l'angle)
         const targets = [
-            { ...getRotatedPoint(carre.cx, carre.cy, -half, -half, carre.angle), rot: carre.angle, id: 0 }, // Haut-Gauche
-            { ...getRotatedPoint(carre.cx, carre.cy, half, -half, carre.angle), rot: carre.angle + 90, id: 1 }, // Haut-Droite
-            { ...getRotatedPoint(carre.cx, carre.cy, half, half, carre.angle), rot: carre.angle + 180, id: 2 }, // Bas-Droite
-            { ...getRotatedPoint(carre.cx, carre.cy, -half, half, carre.angle), rot: carre.angle + 270, id: 3 } // Bas-Gauche
+            { ...getRotatedPoint(carre.cx, carre.cy, -half, -half, carre.angle), rot: carre.angle, id: 0 },
+            { ...getRotatedPoint(carre.cx, carre.cy, half, -half, carre.angle), rot: carre.angle + 90, id: 1 },
+            { ...getRotatedPoint(carre.cx, carre.cy, half, half, carre.angle), rot: carre.angle + 180, id: 2 },
+            { ...getRotatedPoint(carre.cx, carre.cy, -half, half, carre.angle), rot: carre.angle + 270, id: 3 }
         ];
 
-        // Placer les marqueurs invisibles sur la grille
         targets.forEach((t, i) => {
             const m = document.getElementById(`marker-${i}`);
             m.style.left = t.x + 'px';
@@ -450,18 +446,15 @@
 
         function checkAngles() {
             targets.forEach((target, index) => {
-                if (anglesTrouves[index]) return; // Déjà validé
+                if (anglesTrouves[index]) return;
 
-                // Calcul distance entre coin de l'équerre (eqX, eqY) et le coin cible
                 let dist = Math.sqrt(Math.pow(eqX - target.x, 2) + Math.pow(eqY - target.y, 2));
                 
-                // Calcul différence de rotation
                 let expectedRot = target.rot % 360;
                 let currentRot = eqRotation % 360;
                 let rotDiff = Math.abs(currentRot - expectedRot);
                 if (rotDiff > 180) rotDiff = 360 - rotDiff;
 
-                // Tolérance : Moins de 20px de distance, et moins de 15 degrés d'écart
                 if (dist < 20 && rotDiff < 15) {
                     anglesTrouves[index] = true;
                     document.getElementById(`marker-${index}`).style.display = 'block';
