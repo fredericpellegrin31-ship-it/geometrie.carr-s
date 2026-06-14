@@ -139,7 +139,7 @@
         /* --- L'ÉQUERRE --- */
         #equerre-container {
             position: absolute;
-            left: 0; /* Fixation indispensable pour le repère mathématique */
+            left: 0; 
             top: 0;
             width: 250px;
             height: 250px;
@@ -147,22 +147,12 @@
             z-index: 100;
             filter: drop-shadow(4px 6px 8px rgba(0,0,0,0.4));
             touch-action: none;
-        }
-
-        /* Bouclier invisible parfait pour attraper l'équerre sans faille */
-        #drag-zone {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 5;
             cursor: grab;
-            /* On coupe le carré invisible pour qu'il ait exactement la forme du triangle */
-            clip-path: polygon(0 0, 100% 0, 0 100%); 
+            /* Astuce magique : fond quasi-transparent pour que le bloc ENTIER capte la souris et la molette */
+            background-color: rgba(255, 255, 255, 0.01); 
         }
 
-        #drag-zone:active {
+        #equerre-container:active {
             cursor: grabbing;
         }
 
@@ -262,7 +252,7 @@
 
             <!-- L'ÉQUERRE -->
             <div id="equerre-container">
-                <!-- Dessin graphique ignoré par la souris -->
+                <!-- Dessin graphique de l'équerre -->
                 <svg width="250" height="250" viewBox="0 0 250 250" style="position: absolute; left: 0; top: 0; pointer-events: none;">
                     <polygon points="0,0 200,0 0,200" fill="rgba(255, 235, 59, 0.8)" stroke="#fbc02d" stroke-width="2"/>
                     <polygon points="25,25 125,25 25,125" fill="#e0f7fa" stroke="#fbc02d" stroke-width="2"/>
@@ -275,8 +265,6 @@
                     <line x1="0" y1="100" x2="10" y2="100" stroke="black" stroke-width="3"/>
                 </svg>
                 
-                <!-- Zone invisible de glissement 100% fiable -->
-                <div id="drag-zone"></div>
                 <!-- Poignée de rotation au premier plan -->
                 <div id="rotate-handle">⟲</div>
             </div>
@@ -297,10 +285,10 @@
             if (tabJeu.classList.contains('active')) {
                 let w = tabJeu.clientWidth;
                 let h = tabJeu.clientHeight;
-                if (w === 0 || h === 0) return; // Evite le bug de calcul à 0
+                if (w === 0 || h === 0) return;
                 
                 scale = Math.min(w / 1000, h / 700);
-                scale = Math.max(0.1, scale); // Sécurité mathématique
+                scale = Math.max(0.1, scale); 
                 gameArea.style.transform = `scale(${scale})`;
             }
         }
@@ -313,20 +301,18 @@
             btn.classList.add('active');
             
             if(tabId === 'jeu') {
-                // Petit délai pour laisser le temps au navigateur de tout afficher avant de calculer la taille
                 setTimeout(resizeGameArea, 50); 
             }
         }
 
         /* --- LOGIQUE DU JEU GEOMETRIE --- */
         const equerre = document.getElementById('equerre-container');
-        const dragZone = document.getElementById('drag-zone');
         const rotateHandle = document.getElementById('rotate-handle');
         
         let isDragging = false;
         let isRotating = false;
-        let startPointerX, startPointerY;
-        let initialEqX, initialEqY;
+        let startPointerX = 0, startPointerY = 0;
+        let initialEqX = 500, initialEqY = 350;
         
         let eqX = 500;
         let eqY = 350;
@@ -337,9 +323,8 @@
             equerre.style.transform = `translate(${eqX}px, ${eqY}px) rotate(${eqRotation}deg)`;
             checkAngles();
         }
-        updateEquerre();
 
-        /* --- SYSTEME D'EVENEMENTS ULTRA-ROBUSTE --- */
+        /* --- SYSTEME D'EVENEMENTS FIABLE (SOURIS & TACTILE) --- */
         
         function getClientPos(e) {
             if (e.touches && e.touches.length > 0) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -347,36 +332,35 @@
             return { x: e.clientX, y: e.clientY };
         }
 
-        function handleStart(e, action) {
-            e.preventDefault(); // Bloque le défilement de l'écran
+        // On déclenche l'action quand on clique/touche la zone de l'équerre
+        function handleStart(e) {
+            e.preventDefault(); 
             let pos = getClientPos(e);
 
-            if (action === 'drag') {
-                isDragging = true;
-                startPointerX = pos.x;
-                startPointerY = pos.y;
-                initialEqX = eqX;
-                initialEqY = eqY;
-            } else if (action === 'rotate') {
+            // On vérifie si on a cliqué sur le bouton rose de rotation
+            if (e.target.id === 'rotate-handle' || (e.target.parentNode && e.target.parentNode.id === 'rotate-handle')) {
                 isRotating = true;
                 rotateHandle.classList.add('active');
+            } else {
+                isDragging = true;
             }
+
+            startPointerX = pos.x;
+            startPointerY = pos.y;
+            initialEqX = eqX;
+            initialEqY = eqY;
         }
 
-        // Branchement du clic ET du toucher
-        dragZone.addEventListener('mousedown', (e) => handleStart(e, 'drag'), { passive: false });
-        dragZone.addEventListener('touchstart', (e) => handleStart(e, 'drag'), { passive: false });
+        equerre.addEventListener('mousedown', handleStart, { passive: false });
+        equerre.addEventListener('touchstart', handleStart, { passive: false });
 
-        rotateHandle.addEventListener('mousedown', (e) => handleStart(e, 'rotate'), { passive: false });
-        rotateHandle.addEventListener('touchstart', (e) => handleStart(e, 'rotate'), { passive: false });
-
-        // Mouvements suivis globalement
+        // On suit le mouvement sur toute la page pour ne jamais perdre l'équerre
         function handleMove(e) {
             if (!isDragging && !isRotating) return;
             e.preventDefault();
 
             let pos = getClientPos(e);
-            let safeScale = Math.max(0.1, scale); // Sécurité division par zéro
+            let safeScale = Math.max(0.1, scale); 
 
             if (isDragging) {
                 let dx = (pos.x - startPointerX) / safeScale;
@@ -392,7 +376,7 @@
                 let angleRad = Math.atan2(pos.y - pivotScreenY, pos.x - pivotScreenX);
                 let angleDeg = angleRad * (180 / Math.PI);
                 
-                eqRotation = angleDeg - 45; // 45° compense la position du bouton rose
+                eqRotation = angleDeg - 45; 
                 if (eqRotation < 0) eqRotation += 360;
             }
             updateEquerre();
@@ -401,7 +385,7 @@
         window.addEventListener('mousemove', handleMove, { passive: false });
         window.addEventListener('touchmove', handleMove, { passive: false });
 
-        // Fin des mouvements
+        // On arrête l'action quand on lâche le bouton
         function handleEnd() {
             isDragging = false;
             isRotating = false;
@@ -411,13 +395,17 @@
         window.addEventListener('mouseup', handleEnd);
         window.addEventListener('touchend', handleEnd);
 
-        // Molette souris
+        /* --- ROTATION AVEC LA MOLETTE DE LA SOURIS --- */
         equerre.addEventListener('wheel', (e) => {
             e.preventDefault();
-            eqRotation += e.deltaY > 0 ? 5 : -5;
+            // e.deltaY indique le sens de la molette
+            let direction = e.deltaY > 0 ? 1 : -1;
+            eqRotation += direction * 5; // Pivote de 5 degrés
+            
             if (eqRotation < 0) eqRotation += 360;
             updateEquerre();
         }, {passive: false});
+
 
         /* --- VERIFICATION DES ANGLES --- */
         const carre = { cx: 250, cy: 350, size: 200, angle: 15 };
@@ -470,6 +458,10 @@
                 }, 500);
             }
         }
+
+        // On appelle la fonction de mise à jour tout à la fin, 
+        // une fois que 'targets' a été complètement initialisé.
+        updateEquerre();
     </script>
 </body>
 </html>
