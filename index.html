@@ -362,7 +362,7 @@
 
         function updateEquerre() {
             equerre.style.transform = `translate(${eqX}px, ${eqY}px) rotate(${eqRotation}deg)`;
-            checkAngles();
+            return checkAngles();
         }
 
         /* --- GENERATION ALEATOIRE DES FORMES --- */
@@ -504,7 +504,17 @@
                 eqRotation = angleDeg - 45; 
                 if (eqRotation < 0) eqRotation += 360;
             }
-            updateEquerre();
+            
+            let snapped = updateEquerre();
+            
+            // Si l'équerre vient de s'aimanter, on réinitialise l'ancrage 
+            // pour qu'elle ne saute pas si l'élève bouge encore un peu le doigt
+            if (snapped) {
+                startPointerX = pos.x;
+                startPointerY = pos.y;
+                initialEqX = eqX;
+                initialEqY = eqY;
+            }
         }
 
         window.addEventListener('mousemove', handleMove, { passive: false });
@@ -531,6 +541,7 @@
 
         /* --- VERIFICATION DES ANGLES --- */
         function checkAngles() {
+            let justSnapped = false;
             targets.forEach((target, index) => {
                 if (anglesTrouves[index]) return;
 
@@ -538,16 +549,27 @@
                 
                 let expectedRot = target.rot % 360;
                 let currentRot = eqRotation % 360;
+                if (currentRot < 0) currentRot += 360;
                 let rotDiff = Math.abs(currentRot - expectedRot);
                 if (rotDiff > 180) rotDiff = 360 - rotDiff;
 
                 // Tolérance stricte pour obliger à bien aligner les bords (6 degrés max !)
                 if (dist < 20 && rotDiff < 6) {
                     anglesTrouves[index] = true;
+                    
+                    // --- EFFET D'AIMANTATION (MAGNÉTISME) ---
+                    eqX = target.x;
+                    eqY = target.y;
+                    eqRotation = target.rot;
+                    equerre.style.transform = `translate(${eqX}px, ${eqY}px) rotate(${eqRotation}deg)`;
+                    justSnapped = true;
+                    // ----------------------------------------
+
                     document.getElementById(`marker-${index}`).style.display = 'block';
                     checkVictoire();
                 }
             });
+            return justSnapped;
         }
 
         function checkVictoire() {
